@@ -11,6 +11,16 @@ Run this script once locally on your computer to obtain your YOUTUBE_REFRESH_TOK
 import argparse
 import json
 import os
+import sys
+
+# Ensure UTF-8 output on Windows console
+if sys.stdout.encoding != 'utf-8':
+    try:
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    except Exception:
+        pass
+
 from google_auth_oauthlib.flow import InstalledAppFlow
 
 SCOPES = [
@@ -97,8 +107,8 @@ def main():
         }
         flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
 
-    print("\n[*] Đang mở trình duyệt để bạn đăng nhập tài khoản Google / YouTube...")
-    creds = flow.run_local_server(port=0, prompt="consent", access_type="offline")
+    print("\n[*] Đang khởi động trình duyệt để đăng nhập tài khoản YouTube...", flush=True)
+    creds = flow.run_local_server(port=8080, prompt="consent", access_type="offline")
 
     print("\n" + "=" * 65)
     print("XÁC THỰC YOUTUBE THÀNH CÔNG! (YOUTUBE AUTHORIZATION SUCCESSFUL)")
