@@ -25,36 +25,37 @@ def parse_cookie_input(cookie_input: str) -> List[Dict]:
     if not cookie_input:
         return cookies
 
+    content = cookie_input
     # Check if input is a path to an existing cookie file
     if os.path.exists(cookie_input):
         try:
             with open(cookie_input, "r", encoding="utf-8") as f:
                 content = f.read()
-            # If Netscape HTTP Cookie format (tab-separated)
-            if "\t" in content:
-                for line in content.splitlines():
-                    line = line.strip()
-                    if not line or line.startswith("#"):
-                        continue
-                    parts = line.split("\t")
-                    if len(parts) >= 7:
-                        domain = parts[0]
-                        name = parts[5].strip()
-                        val = parts[6].strip()
-                        for d in [domain, ".rednote.com", ".xiaohongshu.com"]:
-                            cookies.append({
-                                "name": name,
-                                "value": val,
-                                "domain": d,
-                                "path": parts[2] or "/",
-                            })
-                return cookies
-            cookie_input = content
         except Exception as e:
             logger.warning(f"Error reading cookie file {cookie_input}: {e}")
 
+    # If Netscape HTTP Cookie format (tab-separated lines), parse lines
+    if "\t" in content:
+        for line in content.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
+            parts = line.split("\t")
+            if len(parts) >= 7:
+                domain = parts[0]
+                name = parts[5].strip()
+                val = parts[6].strip()
+                for d in [domain, ".rednote.com", ".xiaohongshu.com"]:
+                    cookies.append({
+                        "name": name,
+                        "value": val,
+                        "domain": d,
+                        "path": parts[2] or "/",
+                    })
+        return cookies
+
     # Standard 'name=value; ...' string parsing
-    items = cookie_input.split(";")
+    items = content.split(";")
     for item in items:
         if "=" in item:
             name, value = item.strip().split("=", 1)
@@ -172,6 +173,10 @@ async def check_and_download_latest_video(
             cover_a = await card.query_selector("a.cover")
             href = (await cover_a.get_attribute("href")) if cover_a else ""
 
+            # Check cover image URL
+            img_el = await card.query_selector("img")
+            cover_url = (await img_el.get_attribute("src")) if img_el else ""
+
             # Extract note ID from href or hash of title
             m = re.search(r"/explore/([a-zA-Z0-9]+)", href)
             note_id = m.group(1) if m else hashlib.md5(title_text.encode("utf-8")).hexdigest()[:16]
@@ -189,6 +194,7 @@ async def check_and_download_latest_video(
                 "note_id": note_id,
                 "title": title_text,
                 "href": href,
+                "cover_url": cover_url,
             }
             break
 
@@ -285,11 +291,38 @@ async def check_and_download_latest_video(
         file_sz = os.path.getsize(raw_video_path)
         logger.info(f"Successfully downloaded clean video: {raw_video_path} ({file_sz / 1024 / 1024:.2f} MB)")
 
+        # Download or extract thumbnail cover
+        cover_path = os.path.join(output_dir, f"cover_{target_info['note_id']}.jpg")
+        cover_url = target_info.get("cover_url", "")
+        if cover_url and cover_url.startswith("http"):
+            try:
+                req_cov = urllib.request.Request(
+                    cover_url,
+                    headers={
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                        "Referer": "https://www.rednote.com/",
+                    },
+                )
+                with urllib.request.urlopen(req_cov, timeout=20) as c_resp, open(cover_path, "wb") as c_out:
+                    c_out.write(c_resp.read())
+                logger.info(f"Downloaded XHS cover image -> {cover_path}")
+            except Exception as e:
+                logger.warning(f"Error downloading cover image: {e}")
+
+        # Fallback thumbnail: 1.5-second frame from clean video
+        if not os.path.exists(cover_path) or os.path.getsize(cover_path) == 0:
+            subprocess.run(
+                ["ffmpeg", "-nostdin", "-y", "-ss", "00:00:01.500", "-i", raw_video_path, "-vframes", "1", "-q:v", "2", cover_path],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+
         return {
             "note_id": target_info["note_id"],
             "title": target_info["title"],
             "desc": desc_text or target_info["title"],
             "video_path": raw_video_path,
+            "cover_path": cover_path,
         }
 
 

@@ -145,3 +145,43 @@ def process_video_and_burn_subs(
 
     logger.info(f"Successfully processed video with new Vietnamese subs -> {output_video_path}")
     return output_video_path
+
+
+def generate_shorts_thumbnail(
+    cover_image_path: str,
+    output_thumbnail_path: str,
+    hook_text: str = "",
+) -> str:
+    """
+    Creates an eye-catching YouTube Shorts thumbnail (vertical 720x1280 or native aspect ratio).
+    If hook_text is provided, adds a bold yellow/white text banner in the upper third of the image.
+    """
+    if not os.path.exists(cover_image_path):
+        return ""
+
+    os.makedirs(os.path.dirname(os.path.abspath(output_thumbnail_path)), exist_ok=True)
+    clean_hook = hook_text.replace("'", "").replace(":", "").replace("\\", "").strip()
+
+    if clean_hook:
+        filter_str = (
+            "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,"
+            f"drawtext=text='{clean_hook}':font='Arial':fontsize=50:fontcolor=yellow:borderw=4:bordercolor=black:box=1:boxcolor=black@0.65:boxborderw=14:x=(w-text_w)/2:y=(h-text_h)*0.26"
+        )
+    else:
+        filter_str = "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280"
+
+    cmd = [
+        "ffmpeg", "-nostdin", "-y",
+        "-i", cover_image_path,
+        "-vf", filter_str,
+        "-vframes", "1",
+        "-q:v", "2",
+        output_thumbnail_path,
+    ]
+    try:
+        subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        logger.info(f"Generated YouTube Shorts thumbnail -> {output_thumbnail_path}")
+        return output_thumbnail_path
+    except Exception as e:
+        logger.warning(f"Error generating thumbnail with text: {e}")
+        return cover_image_path

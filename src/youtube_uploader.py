@@ -57,9 +57,10 @@ def upload_to_youtube_shorts(
     title: str,
     description: str,
     tags: Optional[List[str]] = None,
+    thumbnail_path: Optional[str] = None,
     privacy_status: str = "public",
 ) -> Optional[str]:
-    """Uploads vertical MP4 video to YouTube Shorts."""
+    """Uploads vertical MP4 video to YouTube Shorts with optional custom thumbnail."""
     # Ensure title contains #Shorts and stays within YouTube's 100-character limit
     clean_title = title.replace("#Shorts", "").replace("#shorts", "").strip()
     if len(clean_title) > 90:
@@ -105,4 +106,17 @@ def upload_to_youtube_shorts(
     response = request.execute()
     video_id = response.get("id")
     logger.info(f"Successfully published to YouTube Shorts! URL: https://youtu.be/{video_id}")
+
+    # Set custom thumbnail if generated
+    if thumbnail_path and os.path.exists(thumbnail_path):
+        try:
+            logger.info(f"Setting custom thumbnail for YouTube video {video_id}...")
+            service.thumbnails().set(
+                videoId=video_id,
+                media_body=MediaFileUpload(thumbnail_path, mimetype="image/jpeg"),
+            ).execute()
+            logger.info("Custom thumbnail uploaded successfully!")
+        except Exception as e:
+            logger.info(f"Custom thumbnail skipped (channel may require verified phone number for custom thumbs): {e}")
+
     return video_id

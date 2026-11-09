@@ -88,12 +88,14 @@ Nhiệm vụ:
    - Mỗi câu phụ đề không quá 8-10 từ để người xem dễ đọc trên điện thoại.
 4. Dịch tiêu đề gốc: "{original_title}" sang 1 câu tiêu đề tiếng Việt giật tít, cuốn hút chuẩn YouTube Shorts (tối đa 60 ký tự).
 5. Tóm tắt nội dung mô tả video bằng 1-2 câu tiếng Việt.
+6. Đặt 1 câu HOOK ngắn gọn (2-5 từ, VIẾT HOA) để in làm ảnh thumbnail YouTube Shorts (ví dụ: "CẢ CUỘC ĐỜI CON NGƯỜI", "1 TUỔI ĐẾN 100 TUỔI", "TẬP NÀY CỰC CĂNG").
 
 Định dạng trả về:
 Hãy trả về DUY NHẤT một chuỗi JSON hợp lệ theo cấu trúc sau (không kèm markdown ```json bọc ngoài):
 {{
   "vi_title": "Tiêu đề tiếng Việt cực bắt tai",
   "vi_desc": "Mô tả ngắn tiếng Việt...",
+  "thumb_hook": "HOOK NGẮN IN ẢNH BÌA",
   "srt_content": "1\\n00:00:01,000 --> 00:00:03,500\\nCâu phụ đề tiếng Việt 1\\n\\n2\\n00:00:03,600 --> 00:00:06,200\\nCâu phụ đề tiếng Việt 2"
 }}
 """
@@ -112,6 +114,7 @@ Hãy trả về DUY NHẤT một chuỗi JSON hợp lệ theo cấu trúc sau (k
 
         vi_title = data.get("vi_title", original_title)
         vi_desc = data.get("vi_desc", original_desc)
+        thumb_hook = data.get("thumb_hook", vi_title)
         srt_content = data.get("srt_content", "")
 
         if not srt_content:
@@ -122,10 +125,12 @@ Hãy trả về DUY NHẤT một chuỗi JSON hợp lệ theo cấu trúc sau (k
 
         logger.info(f"Generated Vietnamese subtitles -> {srt_path}")
         logger.info(f"Vietnamese Title: {vi_title}")
+        logger.info(f"Thumbnail Hook: {thumb_hook}")
         return {
             "srt_path": srt_path,
             "vi_title": vi_title,
             "vi_desc": vi_desc,
+            "thumb_hook": thumb_hook,
         }
 
     except Exception as e:

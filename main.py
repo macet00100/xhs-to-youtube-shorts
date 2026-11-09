@@ -15,7 +15,7 @@ import sys
 
 from src.xhs_monitor import check_and_download_latest_video
 from src.sub_translator import generate_vietnamese_subtitles
-from src.video_processor import process_video_and_burn_subs
+from src.video_processor import process_video_and_burn_subs, generate_shorts_thumbnail
 from src.youtube_uploader import upload_to_youtube_shorts
 
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s: %(message)s")
@@ -91,6 +91,14 @@ def main():
         output_video_path=final_shorts_path,
     )
 
+    # STEP 3.5: Generate eye-catching YouTube Shorts thumbnail with Vietnamese hook banner
+    thumb_path = os.path.join(temp_dir, "thumb.jpg")
+    final_thumb = generate_shorts_thumbnail(
+        cover_image_path=video_info.get("cover_path", ""),
+        output_thumbnail_path=thumb_path,
+        hook_text=sub_info.get("thumb_hook", ""),
+    )
+
     # STEP 4: Upload to YouTube Shorts
     logger.info(">>> STEP 4: Uploading to YouTube Shorts...")
     privacy_setting = os.environ.get("YOUTUBE_PRIVACY") or args.privacy
@@ -102,6 +110,7 @@ def main():
             video_path=final_shorts_path,
             title=sub_info["vi_title"],
             description=sub_info["vi_desc"],
+            thumbnail_path=final_thumb,
             privacy_status=privacy_setting,
         )
 
