@@ -69,12 +69,11 @@ def upload_to_youtube_shorts(
 
     final_desc = (
         f"{description}\n\n"
-        f"#Shorts #gaming #meme #viral\n"
-        f"Video gốc: 拧不动啊真拧不动 (Xiaohongshu/Rednote)"
+        f"#Shorts #gaming #haihuoc #review #game"
     )
 
     if tags is None:
-        tags = ["shorts", "gaming", "funny", "xiaohongshu", "reup"]
+        tags = ["shorts", "gaming", "funny", "game", "haihuoc", "giaitri"]
 
     service = get_youtube_service()
     if not service:

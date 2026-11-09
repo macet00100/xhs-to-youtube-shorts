@@ -87,7 +87,7 @@ Nhiệm vụ:
 3. Tạo ra phụ đề chuẩn định dạng SRT (SubRip) có mốc thời gian (timestamp) chính xác từng giây.
    - Mỗi câu phụ đề không quá 8-10 từ để người xem dễ đọc trên điện thoại.
 4. Dịch tiêu đề gốc: "{original_title}" sang 1 câu tiêu đề tiếng Việt giật tít, cuốn hút chuẩn YouTube Shorts (tối đa 60 ký tự).
-5. Tóm tắt nội dung mô tả video bằng 1-2 câu tiếng Việt.
+5. Tóm tắt nội dung mô tả video bằng 1-2 câu tiếng Việt (nội dung lôi cuốn, chỉ nói về trải nghiệm game, tuyệt đối không nhắc đến tiếng Trung, Xiaohongshu hay nguồn gốc nào khác).
 6. Đặt 1 câu HOOK ngắn gọn (2-5 từ, VIẾT HOA) để in làm ảnh thumbnail YouTube Shorts (ví dụ: "CẢ CUỘC ĐỜI CON NGƯỜI", "1 TUỔI ĐẾN 100 TUỔI", "TẬP NÀY CỰC CĂNG").
 
 Định dạng trả về:
