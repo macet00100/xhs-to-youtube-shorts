@@ -17,6 +17,7 @@ from src.xhs_monitor import check_and_download_latest_video
 from src.sub_translator import generate_vietnamese_subtitles
 from src.video_processor import process_video_and_burn_subs, generate_shorts_thumbnail
 from src.youtube_uploader import upload_to_youtube_shorts
+from src.fb_uploader import upload_to_facebook_page
 
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s: %(message)s")
 logger = logging.getLogger("AutoReupPipeline")
@@ -114,12 +115,25 @@ def main():
             privacy_status=privacy_setting,
         )
 
-    # STEP 5: Record to history
+    # STEP 5: Upload to Facebook Page (Reels) if configured
+    logger.info(">>> STEP 5: Checking & Uploading to Facebook Page (Reels)...")
+    if args.dry_run:
+        logger.info("[DRY-RUN] Skipping Facebook upload step.")
+        fb_id = "DRY_RUN_FB_ID"
+    else:
+        fb_id = upload_to_facebook_page(
+            video_path=final_shorts_path,
+            title=sub_info["vi_title"],
+            description=sub_info["vi_desc"],
+        )
+
+    # STEP 6: Record to history
     record = {
         "note_id": video_info["note_id"],
         "title": video_info["title"],
         "vi_title": sub_info["vi_title"],
         "youtube_id": yt_id,
+        "facebook_id": fb_id,
         "processed_at": datetime.now(timezone.utc).isoformat(),
     }
     if not args.dry_run:
