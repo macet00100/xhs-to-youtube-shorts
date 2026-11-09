@@ -1,5 +1,13 @@
 {
-  "last_updated": "2026-11-09T17:35:00Z",
+  "last_updated": "2026-11-09T12:20:28.456228+00:00",
   "target_user_id": "6542ed2b00000000300323af",
-  "processed_notes": []
+  "processed_notes": [
+    {
+      "note_id": "ab0455430bf89475",
+      "title": "这游戏是很多人的一辈子",
+      "vi_title": "Game Mô Phỏng Cuộc Đời Thực Tế: Từ 1 Đến 85 Tuổi!",
+      "youtube_id": "uLCWkGHGnhQ",
+      "processed_at": "2026-11-09T12:20:28.456116+00:00"
+    }
+  ]
 }
