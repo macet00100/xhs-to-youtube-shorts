@@ -46,6 +46,7 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="Run without uploading to YouTube")
     parser.add_argument("--history", default="history.json", help="Path to history tracking file")
     parser.add_argument("--privacy", default="public", choices=["public", "unlisted", "private"], help="YouTube Shorts privacy")
+    parser.add_argument("--order", default="oldest_first", choices=["oldest_first", "newest_first"], help="Strategy for backlog processing")
     args = parser.parse_args()
 
     temp_dir = "temp"
@@ -64,9 +65,13 @@ def main():
     logger.info("Target Creator: 拧不动啊真拧不动 (6542ed2b00000000300323af)")
     logger.info("=" * 65)
 
-    # STEP 1: Scan Xiaohongshu and download newest video
-    logger.info(">>> STEP 1: Checking Xiaohongshu channel for new videos...")
-    video_info = asyncio.run(check_and_download_latest_video(history_file=args.history, output_dir=temp_dir))
+    # STEP 1: Scan Xiaohongshu and download targeted video (oldest or newest)
+    logger.info(f">>> STEP 1: Checking Xiaohongshu channel for videos (order={args.order})...")
+    video_info = asyncio.run(check_and_download_latest_video(
+        history_file=args.history,
+        output_dir=temp_dir,
+        order=args.order,
+    ))
 
     if not video_info:
         logger.info("No new video found. Everything is up to date. Exiting cleanly.")

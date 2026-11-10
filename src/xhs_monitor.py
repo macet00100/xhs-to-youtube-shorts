@@ -77,12 +77,15 @@ async def check_and_download_latest_video(
     history_file: str = "history.json",
     output_dir: str = "temp",
     cookie_str: Optional[str] = None,
+    order: str = "oldest_first",
 ) -> Optional[Dict]:
     """
-    Checks the target creator's profile, identifies the newest video not in history.json,
+    Checks the target creator's profile, identifies unprocessed videos,
+    selects target video according to strategy (oldest_first or newest_first),
     downloads the watermark-free MP4, and returns the video metadata.
     """
     os.makedirs(output_dir, exist_ok=True)
+    order = os.environ.get("REUP_ORDER", order)
     processed_ids = set()
     if os.path.exists(history_file):
         try:
@@ -156,16 +159,22 @@ async def check_and_download_latest_video(
 
         await page.wait_for_timeout(3000)
 
+        # Scroll down 3 times to ensure all note cards on profile are loaded
+        for _ in range(3):
+            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+            await page.wait_for_timeout(1000)
+
         # Inspect note cards
         cards = await page.query_selector_all("section.note-item")
         logger.info(f"Found {len(cards)} note cards on channel profile.")
 
-        target_card = None
-        target_info = None
-
+        unprocessed_items = []
         for idx, card in enumerate(cards):
             # Check if this card has a play icon (is a video)
             is_video = await card.query_selector(".play-icon")
+            if not is_video:
+                continue
+
             title_el = await card.query_selector(".footer .title span, .footer .title")
             title_text = (await title_el.inner_text()).strip() if title_el else f"video_{idx}"
 
@@ -181,33 +190,39 @@ async def check_and_download_latest_video(
             m = re.search(r"/explore/([a-zA-Z0-9]+)", href)
             note_id = m.group(1) if m else hashlib.md5(title_text.encode("utf-8")).hexdigest()[:16]
 
-            if not is_video:
-                continue
-
             if note_id in processed_ids or title_text in processed_ids:
-                logger.info(f"Card #{idx} ('{title_text}') already processed. Skipping.")
                 continue
 
-            logger.info(f"Found NEW unprocessed video: '{title_text}' (ID: {note_id})")
-            target_card = card
-            target_info = {
+            unprocessed_items.append((card, {
                 "note_id": note_id,
                 "title": title_text,
                 "href": href,
                 "cover_url": cover_url,
-            }
-            break
+                "card_idx": idx,
+            }))
 
-        if not target_card or not target_info:
-            logger.info("No new video posts found to process. Channel is up to date!")
+        if not unprocessed_items:
+            logger.info("No new video posts found to process. All channel videos are up to date!")
             await browser.close()
             return None
+
+        logger.info(f"Found {len(unprocessed_items)} unprocessed videos in channel backlog.")
+
+        # Select target video according to strategy (oldest_first by default)
+        if order == "oldest_first":
+            target_card, target_info = unprocessed_items[-1]
+            logger.info(f"[OLDEST FIRST] Selected oldest unprocessed video: '{target_info['title']}' (Card #{target_info['card_idx']})")
+        else:
+            target_card, target_info = unprocessed_items[0]
+            logger.info(f"[NEWEST FIRST] Selected newest unprocessed video: '{target_info['title']}' (Card #{target_info['card_idx']})")
 
         # Click into target video note to reveal the player
         logger.info(f"Opening video detail for: {target_info['title']}...")
         captured_mp4_urls.clear()
 
         try:
+            await target_card.scroll_into_view_if_needed()
+            await page.wait_for_timeout(500)
             # Click card directly or cover anchor
             cover = await target_card.query_selector("a.cover, .cover")
             if cover:

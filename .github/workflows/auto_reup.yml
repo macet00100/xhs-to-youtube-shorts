@@ -1,11 +1,20 @@
-name: Xiaohongshu to YouTube Shorts Auto Reup
+name: Xiaohongshu to YouTube Shorts & Facebook Reels Auto Reup
 
 on:
   schedule:
-    # Run automatically every 30 minutes
-    - cron: '*/30 * * * *'
+    # Chạy mỗi ngày lúc 19:00 giờ Việt Nam (12:00 UTC) - Đều đặn 1 video / ngày
+    - cron: '0 12 * * *'
   workflow_dispatch:
-    # Allow manual trigger anytime from GitHub Actions tab
+    # Cho phép bấm chạy thủ công bất cứ lúc nào trên GitHub Actions
+    inputs:
+      order:
+        description: 'Thứ tự lấy video (oldest_first: từ cũ nhất đến mới nhất, newest_first: từ mới nhất)'
+        required: false
+        default: 'oldest_first'
+        type: choice
+        options:
+          - oldest_first
+          - newest_first
 
 permissions:
   contents: write
@@ -50,8 +59,9 @@ jobs:
           YOUTUBE_PRIVACY: ${{ secrets.YOUTUBE_PRIVACY }}
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
           FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
+          REUP_ORDER: ${{ inputs.order || 'oldest_first' }}
         run: |
-          python main.py
+          python main.py --order "$REUP_ORDER"
 
       - name: Commit & Push Updated History
         uses: stefanzweifel/git-auto-commit-action@v5

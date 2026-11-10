@@ -11,6 +11,8 @@ output/
 *.mp4
 *.mp3
 *.srt
+*.jpg
+*.png
 
 # Python caches
 __pycache__/
