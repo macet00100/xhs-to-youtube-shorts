@@ -100,41 +100,34 @@ Hãy trả về DUY NHẤT một chuỗi JSON hợp lệ theo cấu trúc sau (k
 }}
 """
 
-    try:
-        response = client.models.generate_content(
-            model="gemini-3.5-flash",
-            contents=[audio_part, prompt],
-        )
-        text = response.text.strip()
-        # Strip potential markdown formatting if model wrapped in ```json
-        if text.startswith("```"):
-            text = re.sub(r"^```[a-zA-Z]*\n?", "", text)
-            text = re.sub(r"\n?```$", "", text)
-        data = json.loads(text)
+    candidate_models = ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-3.5-flash-lite"]
+    last_err = None
+    data = None
 
-        vi_title = data.get("vi_title", original_title)
-        vi_desc = data.get("vi_desc", original_desc)
-        thumb_hook = data.get("thumb_hook", vi_title)
-        srt_content = data.get("srt_content", "")
+    for model_name in candidate_models:
+        for attempt in range(2):
+            try:
+                logger.info(f"Calling Gemini ({model_name}, attempt {attempt+1}) for subtitles...")
+                response = client.models.generate_content(
+                    model=model_name,
+                    contents=[audio_part, prompt],
+                )
+                text = response.text.strip()
+                if text.startswith("```"):
+                    text = re.sub(r"^```[a-zA-Z]*\n?", "", text)
+                    text = re.sub(r"\n?```$", "", text)
+                data = json.loads(text)
+                break
+            except Exception as e:
+                last_err = e
+                logger.warning(f"Gemini call failed with {model_name}: {e}. Retrying...")
+                import time
+                time.sleep(2)
+        if data:
+            break
 
-        if not srt_content:
-            srt_content = f"1\n00:00:00,500 --> 00:00:05,000\n{vi_title}\n"
-
-        with open(srt_path, "w", encoding="utf-8") as f:
-            f.write(srt_content)
-
-        logger.info(f"Generated Vietnamese subtitles -> {srt_path}")
-        logger.info(f"Vietnamese Title: {vi_title}")
-        logger.info(f"Thumbnail Hook: {thumb_hook}")
-        return {
-            "srt_path": srt_path,
-            "vi_title": vi_title,
-            "vi_desc": vi_desc,
-            "thumb_hook": thumb_hook,
-        }
-
-    except Exception as e:
-        logger.error(f"Error during Gemini subtitle translation: {e}. Falling back to default subtitle.")
+    if not data:
+        logger.error(f"All Gemini candidates failed: {last_err}. Falling back to default subtitle.")
         default_srt = f"1\n00:00:00,500 --> 00:00:05,000\n{original_title}\n"
         with open(srt_path, "w", encoding="utf-8") as f:
             f.write(default_srt)
@@ -142,4 +135,26 @@ Hãy trả về DUY NHẤT một chuỗi JSON hợp lệ theo cấu trúc sau (k
             "srt_path": srt_path,
             "vi_title": original_title,
             "vi_desc": original_desc,
+            "thumb_hook": original_title,
         }
+
+    vi_title = data.get("vi_title", original_title)
+    vi_desc = data.get("vi_desc", original_desc)
+    thumb_hook = data.get("thumb_hook", vi_title)
+    srt_content = data.get("srt_content", "")
+
+    if not srt_content:
+        srt_content = f"1\n00:00:00,500 --> 00:00:05,000\n{vi_title}\n"
+
+    with open(srt_path, "w", encoding="utf-8") as f:
+        f.write(srt_content)
+
+    logger.info(f"Generated Vietnamese subtitles -> {srt_path}")
+    logger.info(f"Vietnamese Title: {vi_title}")
+    logger.info(f"Thumbnail Hook: {thumb_hook}")
+    return {
+        "srt_path": srt_path,
+        "vi_title": vi_title,
+        "vi_desc": vi_desc,
+        "thumb_hook": thumb_hook,
+    }

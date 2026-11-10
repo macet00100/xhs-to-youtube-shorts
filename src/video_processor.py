@@ -111,13 +111,13 @@ def process_video_and_burn_subs(
 
     # Filter complex:
     # 1. Split video stream into [base] and [crop_strip]
-    # 2. Crop Chinese subtitle band at bottom [ih * blur_y_ratio] and apply boxblur
+    # 2. Crop Chinese subtitle band at bottom [ih * blur_y_ratio] and apply Gaussian blur (gblur=sigma=12)
     # 3. Overlay blurred band back onto [base] at y = H * blur_y_ratio
     # 4. Burn the styled Vietnamese subtitles directly on top of the blurred band
     filter_complex = (
         f"[0:v]split=2[v_base][v_crop];"
         f"[v_crop]crop=w=iw:h=ih*{blur_height_ratio:.3f}:x=0:y=ih*{blur_y_ratio:.3f},"
-        f"boxblur=luma_radius=18:luma_power=4[v_blur];"
+        f"gblur=sigma=12[v_blur];"
         f"[v_base][v_blur]overlay=0:H*{blur_y_ratio:.3f}[v_masked];"
         f"[v_masked]subtitles='{clean_ass_path}'[v_out]"
     )

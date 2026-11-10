@@ -9,6 +9,7 @@ import json
 import logging
 import os
 import re
+import subprocess
 import urllib.request
 from typing import Dict, List, Optional
 from playwright.async_api import async_playwright
@@ -151,55 +152,109 @@ async def check_and_download_latest_video(
         page.on("response", handle_network)
         page.on("request", handle_network)
 
+        # Intercept user_posted API to capture full catalogue of creator videos
+        all_api_notes = []
+        has_more_flag = True
+
+        async def handle_user_posted(res):
+            nonlocal has_more_flag
+            if "user_posted" in res.url:
+                try:
+                    data = await res.json()
+                    if data.get("success") and "data" in data:
+                        notes = data["data"].get("notes", [])
+                        has_more_flag = data["data"].get("has_more", False)
+                        all_api_notes.extend(notes)
+                except Exception:
+                    pass
+
+        page.on("response", handle_user_posted)
+
         logger.info(f"Visiting Rednote creator profile: {profile_url}")
         try:
             await page.goto(profile_url, wait_until="networkidle", timeout=35000)
         except Exception as e:
             logger.warning(f"Initial navigation warning: {e}")
 
-        await page.wait_for_timeout(3000)
+        await page.wait_for_timeout(2500)
 
-        # Scroll down 3 times to ensure all note cards on profile are loaded
-        for _ in range(3):
-            await page.evaluate("window.scrollTo(0, document.body.scrollHeight)")
+        # Scroll dynamically using mouse wheel to trigger all user_posted batches
+        logger.info("Scanning complete channel backlog via infinite scroll...")
+        last_note_count = 0
+        consecutive_idle = 0
+        for scroll_i in range(50):
+            await page.mouse.wheel(0, 4000)
             await page.wait_for_timeout(1000)
+            cur_count = len(all_api_notes)
+            if cur_count == last_note_count:
+                consecutive_idle += 1
+                if (not has_more_flag and consecutive_idle >= 2) or consecutive_idle >= 5:
+                    break
+            else:
+                consecutive_idle = 0
+                last_note_count = cur_count
 
-        # Inspect note cards
-        cards = await page.query_selector_all("section.note-item")
-        logger.info(f"Found {len(cards)} note cards on channel profile.")
+        logger.info(f"Total notes captured from channel API: {len(all_api_notes)}")
 
+        # Deduplicate and extract video items
         unprocessed_items = []
-        for idx, card in enumerate(cards):
-            # Check if this card has a play icon (is a video)
-            is_video = await card.query_selector(".play-icon")
-            if not is_video:
-                continue
+        seen_ids = set()
 
-            title_el = await card.query_selector(".footer .title span, .footer .title")
-            title_text = (await title_el.inner_text()).strip() if title_el else f"video_{idx}"
+        if all_api_notes:
+            for n in all_api_notes:
+                nid = n.get("note_id")
+                if not nid or nid in seen_ids:
+                    continue
+                seen_ids.add(nid)
 
-            # Check cover link or unique tokens
-            cover_a = await card.query_selector("a.cover")
-            href = (await cover_a.get_attribute("href")) if cover_a else ""
+                # Filter video posts only
+                if n.get("type") != "video":
+                    continue
 
-            # Check cover image URL
-            img_el = await card.query_selector("img")
-            cover_url = (await img_el.get_attribute("src")) if img_el else ""
+                title = (n.get("display_title") or n.get("title") or "").strip()
+                if not title:
+                    title = f"video_{nid}"
 
-            # Extract note ID from href or hash of title
-            m = re.search(r"/explore/([a-zA-Z0-9]+)", href)
-            note_id = m.group(1) if m else hashlib.md5(title_text.encode("utf-8")).hexdigest()[:16]
+                if nid in processed_ids or title in processed_ids:
+                    continue
 
-            if note_id in processed_ids or title_text in processed_ids:
-                continue
+                cover_info = n.get("cover") or {}
+                cover_url = cover_info.get("url_default") or cover_info.get("url_pre") or cover_info.get("url", "")
 
-            unprocessed_items.append((card, {
-                "note_id": note_id,
-                "title": title_text,
-                "href": href,
-                "cover_url": cover_url,
-                "card_idx": idx,
-            }))
+                unprocessed_items.append({
+                    "note_id": nid,
+                    "title": title,
+                    "cover_url": cover_url,
+                    "xsec_token": n.get("xsec_token", ""),
+                    "time": n.get("time", 0),
+                })
+        else:
+            # Fallback to scraping visible DOM cards if API intercept was empty
+            logger.warning("API intercept was empty, falling back to DOM cards...")
+            cards = await page.query_selector_all("section.note-item")
+            for idx, card in enumerate(cards):
+                is_video = await card.query_selector(".play-icon")
+                if not is_video:
+                    continue
+                title_el = await card.query_selector(".footer .title span, .footer .title")
+                title_text = (await title_el.inner_text()).strip() if title_el else f"video_{idx}"
+                cover_a = await card.query_selector("a.cover")
+                href = (await cover_a.get_attribute("href")) if cover_a else ""
+                img_el = await card.query_selector("img")
+                cover_url = (await img_el.get_attribute("src")) if img_el else ""
+                m = re.search(r"/explore/([a-zA-Z0-9]+)", href)
+                note_id = m.group(1) if m else hashlib.md5(title_text.encode("utf-8")).hexdigest()[:16]
+
+                if note_id in processed_ids or title_text in processed_ids:
+                    continue
+
+                unprocessed_items.append({
+                    "note_id": note_id,
+                    "title": title_text,
+                    "cover_url": cover_url,
+                    "xsec_token": "",
+                    "time": 0,
+                })
 
         if not unprocessed_items:
             logger.info("No new video posts found to process. All channel videos are up to date!")
@@ -210,27 +265,25 @@ async def check_and_download_latest_video(
 
         # Select target video according to strategy (oldest_first by default)
         if order == "oldest_first":
-            target_card, target_info = unprocessed_items[-1]
-            logger.info(f"[OLDEST FIRST] Selected oldest unprocessed video: '{target_info['title']}' (Card #{target_info['card_idx']})")
+            target_info = unprocessed_items[-1]
+            logger.info(f"[OLDEST FIRST] Selected oldest unprocessed video: '{target_info['title']}' (ID: {target_info['note_id']})")
         else:
-            target_card, target_info = unprocessed_items[0]
-            logger.info(f"[NEWEST FIRST] Selected newest unprocessed video: '{target_info['title']}' (Card #{target_info['card_idx']})")
+            target_info = unprocessed_items[0]
+            logger.info(f"[NEWEST FIRST] Selected newest unprocessed video: '{target_info['title']}' (ID: {target_info['note_id']})")
 
-        # Click into target video note to reveal the player
-        logger.info(f"Opening video detail for: {target_info['title']}...")
+        # Navigate directly to target video detail page
+        xsec = target_info.get("xsec_token", "")
+        detail_url = (
+            f"https://www.rednote.com/explore/{target_info['note_id']}?xsec_token={xsec}&xsec_source=pc_user"
+            if xsec else f"https://www.rednote.com/explore/{target_info['note_id']}"
+        )
+        logger.info(f"Opening video detail page: {detail_url}...")
         captured_mp4_urls.clear()
 
         try:
-            await target_card.scroll_into_view_if_needed()
-            await page.wait_for_timeout(500)
-            # Click card directly or cover anchor
-            cover = await target_card.query_selector("a.cover, .cover")
-            if cover:
-                await cover.click(force=True)
-            else:
-                await target_card.click(force=True)
+            await page.goto(detail_url, wait_until="networkidle", timeout=35000)
         except Exception as e:
-            logger.warning(f"Click trigger note: {e}")
+            logger.warning(f"Direct note navigation warning: {e}")
 
         # Wait up to 10 seconds for real video stream request to be captured
         for _ in range(20):
