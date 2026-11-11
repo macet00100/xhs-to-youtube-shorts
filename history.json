@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-11-09T12:20:28.456228+00:00",
+  "last_updated": "2026-11-11T13:34:10.534932+00:00",
   "target_user_id": "6542ed2b00000000300323af",
   "processed_notes": [
     {
@@ -8,6 +8,14 @@
       "vi_title": "Game Mô Phỏng Cuộc Đời Thực Tế: Từ 1 Đến 85 Tuổi!",
       "youtube_id": "uLCWkGHGnhQ",
       "processed_at": "2026-11-09T12:20:28.456116+00:00"
+    },
+    {
+      "note_id": "663186c4000000001e035029",
+      "title": "非常善于二刀流的盖饭店",
+      "vi_title": "QUÁN CƠM SONG ĐAO: CHỦ QUÁN VỪA NẤU ĂN VỪA ĐÁNH LỘN!",
+      "youtube_id": "BbY9rBd5tm8",
+      "facebook_id": null,
+      "processed_at": "2026-11-11T13:34:10.534825+00:00"
     }
   ]
 }
