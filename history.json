@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-11-11T13:34:10.534932+00:00",
+  "last_updated": "2026-11-11T22:02:57.011204+00:00",
   "target_user_id": "6542ed2b00000000300323af",
   "processed_notes": [
     {
@@ -16,6 +16,14 @@
       "youtube_id": "BbY9rBd5tm8",
       "facebook_id": "1826625035140249",
       "processed_at": "2026-11-11T13:34:10.534825+00:00"
+    },
+    {
+      "note_id": "6634c326000000001e03a559",
+      "title": "非常会抢食的盖饭店顾客",
+      "vi_title": "Tiệm Cơm Bá Đạo: Khách Đến Ăn Hay Đến Đánh Nhau?!",
+      "youtube_id": "aXoe4Um2E58",
+      "facebook_id": "1730051738462313",
+      "processed_at": "2026-11-11T22:02:57.011049+00:00"
     }
   ]
 }
