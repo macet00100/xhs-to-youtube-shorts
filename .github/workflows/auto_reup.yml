@@ -41,10 +41,9 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
-      - name: Install System Dependencies (FFmpeg & Fonts)
+      - name: Verify FFmpeg
         run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg fonts-liberation fonts-dejavu-core
+          ffmpeg -version
 
       - name: Install Python Dependencies
         run: |
