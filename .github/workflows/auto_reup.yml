@@ -27,7 +27,7 @@ permissions:
 
 jobs:
   auto_reup:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
       - name: Checkout Repository
@@ -40,11 +40,6 @@ jobs:
         with:
           python-version: "3.12"
           cache: "pip"
-
-      - name: Install System Dependencies (FFmpeg & Fonts)
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y --no-install-recommends ffmpeg fonts-liberation fonts-dejavu-core
 
       - name: Install Python Dependencies
         run: |
