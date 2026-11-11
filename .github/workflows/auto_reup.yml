@@ -41,8 +41,10 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
-      - name: Setup FFmpeg
-        uses: FedericoCarboni/setup-ffmpeg@v3
+      - name: Install System Dependencies (FFmpeg & Fonts)
+        run: |
+          sudo apt-get update -y
+          sudo apt-get install -y --no-install-recommends ffmpeg fonts-liberation fonts-dejavu-core
 
       - name: Install Python Dependencies
         run: |
