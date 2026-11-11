@@ -2,8 +2,8 @@ name: Xiaohongshu to YouTube Shorts & Facebook Reels Auto Reup
 
 on:
   schedule:
-    # Chạy mỗi ngày lúc 19:00 giờ Việt Nam (12:00 UTC) - Đều đặn 1 video / ngày
-    - cron: '0 12 * * *'
+    # Chạy mỗi ngày lúc 19:15 giờ Việt Nam (12:15 UTC) - Tránh nghẽn giờ chẵn :00 của GitHub Actions
+    - cron: '15 12 * * *'
   workflow_dispatch:
     # Cho phép bấm chạy thủ công bất cứ lúc nào trên GitHub Actions
     inputs:
