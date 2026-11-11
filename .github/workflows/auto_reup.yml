@@ -41,9 +41,8 @@ jobs:
           python-version: "3.12"
           cache: "pip"
 
-      - name: Verify FFmpeg
-        run: |
-          ffmpeg -version
+      - name: Setup FFmpeg
+        uses: FedericoCarboni/setup-ffmpeg@v3
 
       - name: Install Python Dependencies
         run: |
