@@ -10,6 +10,12 @@ import re
 import subprocess
 from typing import Dict, Tuple
 
+try:
+    import static_ffmpeg
+    static_ffmpeg.add_paths()
+except Exception:
+    pass
+
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s: %(message)s")
 logger = logging.getLogger("VideoProcessor")
 
