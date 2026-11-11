@@ -6,7 +6,7 @@ Target: 拧不动啊真拧不动 (Xiaohongshu: 6542ed2b00000000300323af)
 
 import argparse
 import asyncio
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 import json
 import logging
 import os
@@ -41,12 +41,36 @@ def update_history(history_file: str, note_record: dict):
     logger.info(f"Updated {history_file} with note: {note_record.get('note_id')}")
 
 
+def has_posted_today_vn(history_file: str) -> bool:
+    """Checks whether a video has already been published today in Vietnam timezone (UTC+7)."""
+    if not os.path.exists(history_file):
+        return False
+    vn_tz = timezone(timedelta(hours=7))
+    today_vn = datetime.now(vn_tz).strftime("%Y-%m-%d")
+    try:
+        with open(history_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            for item in data.get("processed_notes", []):
+                processed_at = item.get("processed_at")
+                if processed_at:
+                    try:
+                        dt = datetime.fromisoformat(processed_at).astimezone(vn_tz)
+                        if dt.strftime("%Y-%m-%d") == today_vn:
+                            return True
+                    except Exception:
+                        pass
+    except Exception as e:
+        logger.warning(f"Error checking daily quota in {history_file}: {e}")
+    return False
+
+
 def main():
     parser = argparse.ArgumentParser(description="Automated Xiaohongshu to YouTube Shorts Pipeline")
     parser.add_argument("--dry-run", action="store_true", help="Run without uploading to YouTube")
     parser.add_argument("--history", default="history.json", help="Path to history tracking file")
     parser.add_argument("--privacy", default="public", choices=["public", "unlisted", "private"], help="YouTube Shorts privacy")
     parser.add_argument("--order", default="oldest_first", choices=["oldest_first", "newest_first"], help="Strategy for backlog processing")
+    parser.add_argument("--force", action="store_true", help="Bypass 1-video-per-day check and force execution")
     args = parser.parse_args()
 
     temp_dir = "temp"
@@ -64,6 +88,16 @@ def main():
     logger.info("[START] Xiaohongshu -> YouTube Shorts Auto-Reup Pipeline")
     logger.info("Target Creator: 拧不动啊真拧不动 (6542ed2b00000000300323af)")
     logger.info("=" * 65)
+
+    # Rate-limit check: strictly 1 video per day (Vietnam GMT+7) unless --force is specified
+    if not args.force and has_posted_today_vn(args.history):
+        vn_tz = timezone(timedelta(hours=7))
+        today_str = datetime.now(vn_tz).strftime("%d/%m/%Y")
+        logger.info(
+            f"[QUOTA-MET] Hôm nay ({today_str}) đã có video được đăng thành công. "
+            f"Tự động dừng để duy trì đúng tiến độ 1 video / ngày. Hẹn gặp lại vào ngày mai!"
+        )
+        sys.exit(0)
 
     # STEP 1: Scan Xiaohongshu and download targeted video (oldest or newest)
     logger.info(f">>> STEP 1: Checking Xiaohongshu channel for videos (order={args.order})...")

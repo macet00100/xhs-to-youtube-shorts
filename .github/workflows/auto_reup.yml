@@ -2,11 +2,17 @@ name: Xiaohongshu to YouTube Shorts & Facebook Reels Auto Reup
 
 on:
   schedule:
-    # Chạy mỗi ngày lúc 19:15 giờ Việt Nam (12:15 UTC) - Tránh nghẽn giờ chẵn :00 của GitHub Actions
-    - cron: '15 12 * * *'
+    # Quét dự phòng liên tục các mốc buổi tối (19:15, 20:15, 21:15, 22:15, 23:15 giờ VN tức 12:15-16:15 UTC)
+    # Code bên trong tự kiểm tra: nếu ngày hôm nay đã có video thì tắt sau 3 giây, nếu chưa thì đăng bù ngay!
+    - cron: '15 12,13,14,15,16 * * *'
   workflow_dispatch:
     # Cho phép bấm chạy thủ công bất cứ lúc nào trên GitHub Actions
     inputs:
+      force:
+        description: 'Bỏ qua giới hạn 1 video/ngày và ép đăng ngay lập tức'
+        required: false
+        default: false
+        type: boolean
       order:
         description: 'Thứ tự lấy video (oldest_first: từ cũ nhất đến mới nhất, newest_first: từ mới nhất)'
         required: false
@@ -60,8 +66,13 @@ jobs:
           FB_PAGE_ID: ${{ secrets.FB_PAGE_ID }}
           FB_PAGE_ACCESS_TOKEN: ${{ secrets.FB_PAGE_ACCESS_TOKEN }}
           REUP_ORDER: ${{ inputs.order || 'oldest_first' }}
+          FORCE_RUN: ${{ inputs.force || false }}
         run: |
-          python main.py --order "$REUP_ORDER"
+          EXTRA_FLAGS=""
+          if [ "$FORCE_RUN" = "true" ]; then
+            EXTRA_FLAGS="--force"
+          fi
+          python main.py --order "$REUP_ORDER" $EXTRA_FLAGS
 
       - name: Commit & Push Updated History
         uses: stefanzweifel/git-auto-commit-action@v5
