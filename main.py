@@ -89,10 +89,20 @@ def main():
     logger.info("Target Creator: 拧不动啊真拧不动 (6542ed2b00000000300323af)")
     logger.info("=" * 65)
 
+    vn_tz = timezone(timedelta(hours=7))
+    now_vn = datetime.now(vn_tz)
+
+    # Khung giờ đăng hợp lệ: từ 11:00 trưa đến 23:30 tối (tránh đăng lúc rạng sáng / nửa đêm nếu GitHub bị trễ queue)
+    if not args.force and (now_vn.hour < 11 or (now_vn.hour == 23 and now_vn.minute > 30)):
+        logger.info(
+            f"[OFF-PEAK-SKIP] Thời điểm hiện tại ({now_vn.strftime('%H:%M')} giờ VN) nằm ngoài khung giờ vàng (11:00 - 23:30). "
+            f"Tự động bỏ qua để tránh đăng vào sáng sớm/đêm muộn khi GitHub Actions bị trễ queue. Sẽ chờ khung giờ tối tiếp theo!"
+        )
+        sys.exit(0)
+
     # Rate-limit check: strictly 1 video per day (Vietnam GMT+7) unless --force is specified
     if not args.force and has_posted_today_vn(args.history):
-        vn_tz = timezone(timedelta(hours=7))
-        today_str = datetime.now(vn_tz).strftime("%d/%m/%Y")
+        today_str = now_vn.strftime("%d/%m/%Y")
         logger.info(
             f"[QUOTA-MET] Hôm nay ({today_str}) đã có video được đăng thành công. "
             f"Tự động dừng để duy trì đúng tiến độ 1 video / ngày. Hẹn gặp lại vào ngày mai!"
