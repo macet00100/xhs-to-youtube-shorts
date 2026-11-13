@@ -185,6 +185,85 @@ def process_video_and_burn_subs(
     return output_video_path
 
 
+def process_video_for_youtube_shorts(
+    input_video_path: str,
+    srt_subtitles_path: str,
+    output_video_path: str,
+    target_width: int = 1080,
+    target_height: int = 1920,
+    blur_y_ratio: float = 0.815,
+    blur_height_ratio: float = 0.100,
+) -> str:
+    """
+    Converts horizontal or non-9:16 videos (< 3 minutes) into 9:16 (1080x1920) YouTube Shorts:
+    1. Smoothly blurs old Chinese subtitles directly on the video frame.
+    2. Adds pure black background bars on top and bottom to center the video in 9:16 ratio.
+    3. Burns the new Vietnamese subtitles onto the bottom black bar immediately below the video image.
+    If the video is already 9:16 vertical, keeps native format without black bars.
+    """
+    os.makedirs(os.path.dirname(os.path.abspath(output_video_path)), exist_ok=True)
+    w, h = get_video_dimensions(input_video_path)
+
+    # If already vertical 9:16 (within 6% tolerance), no need for black letterboxing
+    if h > w and abs((w / h) - (9 / 16)) < 0.06:
+        return process_video_and_burn_subs(input_video_path, srt_subtitles_path, output_video_path)
+
+    # Scale video to fit 1080 width
+    scaled_w = target_width
+    scaled_h = int(round(target_width * h / w / 2) * 2)
+    y_offset = (target_height - scaled_h) // 2
+    video_bottom = y_offset + scaled_h
+
+    # Subtitle placement on bottom black bar:
+    font_size = 56
+    gap = 35
+    sub_bottom = video_bottom + gap + font_size + 10
+    margin_v = target_height - sub_bottom
+
+    temp_dir = os.path.dirname(os.path.abspath(output_video_path))
+    ass_path = os.path.join(temp_dir, "subtitles_yt_9_16.ass")
+    convert_srt_to_ass(srt_subtitles_path, ass_path, target_width, target_height, font_size, margin_v)
+
+    try:
+        clean_ass_path = os.path.relpath(ass_path).replace("\\", "/")
+    except Exception:
+        clean_ass_path = ass_path.replace("\\", "/").replace(":", "\\:")
+
+    filter_complex = (
+        f"[0:v]split=2[v_base][v_crop];"
+        f"[v_crop]crop=w=iw:h=ih*{blur_height_ratio:.3f}:x=0:y=ih*{blur_y_ratio:.3f},"
+        f"gblur=sigma=12[v_blur];"
+        f"[v_base][v_blur]overlay=0:H*{blur_y_ratio:.3f}[v_clean];"
+        f"[v_clean]scale={scaled_w}:{scaled_h},"
+        f"pad={target_width}:{target_height}:(ow-iw)/2:(oh-ih)/2:black[v_padded];"
+        f"[v_padded]subtitles='{clean_ass_path}'[v_out]"
+    )
+
+    cmd = [
+        "ffmpeg", "-nostdin", "-y",
+        "-i", input_video_path,
+        "-filter_complex", filter_complex,
+        "-map", "[v_out]",
+        "-map", "0:a?",
+        "-c:v", "libx264",
+        "-preset", "fast",
+        "-crf", "19",
+        "-c:a", "aac",
+        "-b:a", "192k",
+        output_video_path,
+    ]
+
+    logger.info("Executing FFmpeg 9:16 YouTube Shorts letterbox & subtitle filter...")
+    res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if res.returncode != 0:
+        err_msg = res.stderr.decode("utf-8", errors="ignore")
+        logger.error(f"FFmpeg 9:16 Shorts processing failed: {err_msg}")
+        raise RuntimeError(f"FFmpeg failed with exit code {res.returncode}")
+
+    logger.info(f"Successfully created 9:16 YouTube Short with sub on black bar -> {output_video_path}")
+    return output_video_path
+
+
 def generate_shorts_thumbnail(
     cover_image_path: str,
     output_thumbnail_path: str,

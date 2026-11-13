@@ -15,7 +15,12 @@ import sys
 
 from src.xhs_monitor import check_and_download_latest_video
 from src.sub_translator import generate_vietnamese_subtitles
-from src.video_processor import process_video_and_burn_subs, generate_shorts_thumbnail, get_video_info
+from src.video_processor import (
+    process_video_and_burn_subs,
+    process_video_for_youtube_shorts,
+    generate_shorts_thumbnail,
+    get_video_info,
+)
 from src.youtube_uploader import upload_to_youtube_shorts
 from src.fb_uploader import upload_to_facebook_page
 
@@ -132,23 +137,39 @@ def main():
         output_dir=temp_dir,
     )
 
-    # STEP 3: Mask old Chinese subtitles & burn new Vietnamese subtitles with FFmpeg
-    logger.info(">>> STEP 3: Applying FFmpeg subtitle blur-mask & burning Vietnamese subtitles...")
-    final_shorts_path = os.path.join(temp_dir, "final_shorts.mp4")
+    # STEP 3: Process video for Facebook (giữ nguyên định dạng gốc của video)
+    logger.info(">>> STEP 3: Xử lý video cho Facebook (giữ nguyên tỉ lệ khung hình gốc)...")
+    final_fb_path = os.path.join(temp_dir, "final_facebook.mp4")
     process_video_and_burn_subs(
         input_video_path=video_info["video_path"],
         srt_subtitles_path=sub_info["srt_path"],
-        output_video_path=final_shorts_path,
+        output_video_path=final_fb_path,
     )
 
-    # Inspect video dimensions and duration to dynamically categorize Short vs Long-form
-    v_info = get_video_info(final_shorts_path)
-    is_short = v_info.get("is_short", False)
-    v_type_label = "YouTube Short (Dọc/Vuông <= 180s)" if is_short else "Long-form Video (Video Dài / Khung Ngang)"
+    # Inspect video metadata (dimensions and duration)
+    raw_info = get_video_info(video_info["video_path"])
+    duration = raw_info.get("duration", 0.0)
     logger.info(
-        f">>> Định dạng Video: {v_info['width']}x{v_info['height']} "
-        f"(tỉ lệ {v_info['aspect_ratio']}), thời lượng: {v_info['duration']:.1f}s -> {v_type_label}"
+        f">>> Video gốc: {raw_info['width']}x{raw_info['height']} "
+        f"(tỉ lệ {raw_info['aspect_ratio']}), thời lượng: {duration:.1f}s"
     )
+
+    # STEP 3.1: Process video for YouTube (Đưa về 9:16 Shorts nếu thời lượng <= 180s)
+    if duration <= 180.0:
+        logger.info(">>> STEP 3.1: Video dưới 3 phút -> Chuyển đổi sang 9:16 (nền đen trên dưới, sub ở nền đen) cho YouTube Shorts...")
+        final_yt_path = os.path.join(temp_dir, "final_yt_shorts.mp4")
+        process_video_for_youtube_shorts(
+            input_video_path=video_info["video_path"],
+            srt_subtitles_path=sub_info["srt_path"],
+            output_video_path=final_yt_path,
+        )
+        yt_is_short = True
+        v_type_label = "YouTube Shorts (9:16 Letterbox)"
+    else:
+        logger.info(">>> STEP 3.1: Video trên 3 phút -> Giữ nguyên định dạng video dài cho YouTube...")
+        final_yt_path = final_fb_path
+        yt_is_short = False
+        v_type_label = "Long-form Video (Video Dài)"
 
     # STEP 3.5: Generate eye-catching YouTube thumbnail with Vietnamese hook banner
     thumb_path = os.path.join(temp_dir, "thumb.jpg")
@@ -156,10 +177,10 @@ def main():
         cover_image_path=video_info.get("cover_path", ""),
         output_thumbnail_path=thumb_path,
         hook_text=sub_info.get("thumb_hook", ""),
-        is_short=is_short,
+        is_short=yt_is_short,
     )
 
-    # STEP 4: Upload to YouTube (Shorts or Long-form)
+    # STEP 4: Upload to YouTube (Shorts 9:16 or Long-form)
     logger.info(f">>> STEP 4: Uploading to YouTube ({v_type_label})...")
     privacy_setting = os.environ.get("YOUTUBE_PRIVACY") or args.privacy
     if args.dry_run:
@@ -167,25 +188,25 @@ def main():
         yt_id = "DRY_RUN_ID"
     else:
         yt_id = upload_to_youtube_shorts(
-            video_path=final_shorts_path,
+            video_path=final_yt_path,
             title=sub_info["vi_title"],
             description=sub_info["vi_desc"],
             thumbnail_path=final_thumb,
             privacy_status=privacy_setting,
-            is_short=is_short,
+            is_short=yt_is_short,
         )
 
-    # STEP 5: Upload to Facebook Page (Reels or Video) if configured
-    logger.info(">>> STEP 5: Checking & Uploading to Facebook Page...")
+    # STEP 5: Upload to Facebook Page (Giữ nguyên tỉ lệ gốc của video)
+    logger.info(">>> STEP 5: Checking & Uploading to Facebook Page (Original Aspect Ratio)...")
     if args.dry_run:
         logger.info("[DRY-RUN] Skipping Facebook upload step.")
         fb_id = "DRY_RUN_FB_ID"
     else:
         fb_id = upload_to_facebook_page(
-            video_path=final_shorts_path,
+            video_path=final_fb_path,
             title=sub_info["vi_title"],
             description=sub_info["vi_desc"],
-            is_short=is_short,
+            is_short=False,
         )
 
     # STEP 6: Record to history
