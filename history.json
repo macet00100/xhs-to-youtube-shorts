@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-11-11T22:02:57.011204+00:00",
+  "last_updated": "2026-11-13T12:42:15.191715+00:00",
   "target_user_id": "6542ed2b00000000300323af",
   "processed_notes": [
     {
@@ -24,6 +24,14 @@
       "youtube_id": "aXoe4Um2E58",
       "facebook_id": "1730051738462313",
       "processed_at": "2026-11-11T22:02:57.011049+00:00"
+    },
+    {
+      "note_id": "663a1a07000000001e03244b",
+      "title": "非常会Out的盖饭店",
+      "vi_title": "Quán cơm rang kỳ cục nhất lịch sử!",
+      "youtube_id": "nAdhRfDfNQs",
+      "facebook_id": "1464525595636346",
+      "processed_at": "2026-11-13T12:42:15.191596+00:00"
     }
   ]
 }
