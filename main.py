@@ -15,7 +15,7 @@ import sys
 
 from src.xhs_monitor import check_and_download_latest_video
 from src.sub_translator import generate_vietnamese_subtitles
-from src.video_processor import process_video_and_burn_subs, generate_shorts_thumbnail
+from src.video_processor import process_video_and_burn_subs, generate_shorts_thumbnail, get_video_info
 from src.youtube_uploader import upload_to_youtube_shorts
 from src.fb_uploader import upload_to_facebook_page
 
@@ -141,16 +141,26 @@ def main():
         output_video_path=final_shorts_path,
     )
 
-    # STEP 3.5: Generate eye-catching YouTube Shorts thumbnail with Vietnamese hook banner
+    # Inspect video dimensions and duration to dynamically categorize Short vs Long-form
+    v_info = get_video_info(final_shorts_path)
+    is_short = v_info.get("is_short", False)
+    v_type_label = "YouTube Short (Dọc/Vuông <= 180s)" if is_short else "Long-form Video (Video Dài / Khung Ngang)"
+    logger.info(
+        f">>> Định dạng Video: {v_info['width']}x{v_info['height']} "
+        f"(tỉ lệ {v_info['aspect_ratio']}), thời lượng: {v_info['duration']:.1f}s -> {v_type_label}"
+    )
+
+    # STEP 3.5: Generate eye-catching YouTube thumbnail with Vietnamese hook banner
     thumb_path = os.path.join(temp_dir, "thumb.jpg")
     final_thumb = generate_shorts_thumbnail(
         cover_image_path=video_info.get("cover_path", ""),
         output_thumbnail_path=thumb_path,
         hook_text=sub_info.get("thumb_hook", ""),
+        is_short=is_short,
     )
 
-    # STEP 4: Upload to YouTube Shorts
-    logger.info(">>> STEP 4: Uploading to YouTube Shorts...")
+    # STEP 4: Upload to YouTube (Shorts or Long-form)
+    logger.info(f">>> STEP 4: Uploading to YouTube ({v_type_label})...")
     privacy_setting = os.environ.get("YOUTUBE_PRIVACY") or args.privacy
     if args.dry_run:
         logger.info("[DRY-RUN] Skipping YouTube upload step.")
@@ -162,10 +172,11 @@ def main():
             description=sub_info["vi_desc"],
             thumbnail_path=final_thumb,
             privacy_status=privacy_setting,
+            is_short=is_short,
         )
 
-    # STEP 5: Upload to Facebook Page (Reels) if configured
-    logger.info(">>> STEP 5: Checking & Uploading to Facebook Page (Reels)...")
+    # STEP 5: Upload to Facebook Page (Reels or Video) if configured
+    logger.info(">>> STEP 5: Checking & Uploading to Facebook Page...")
     if args.dry_run:
         logger.info("[DRY-RUN] Skipping Facebook upload step.")
         fb_id = "DRY_RUN_FB_ID"
@@ -174,6 +185,7 @@ def main():
             video_path=final_shorts_path,
             title=sub_info["vi_title"],
             description=sub_info["vi_desc"],
+            is_short=is_short,
         )
 
     # STEP 6: Record to history

@@ -8,6 +8,7 @@ import logging
 import os
 from typing import Optional
 import requests
+from src.video_processor import get_video_info
 
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s: %(message)s")
 logger = logging.getLogger("FacebookUploader")
@@ -19,9 +20,10 @@ def upload_to_facebook_page(
     description: str,
     page_id: Optional[str] = None,
     access_token: Optional[str] = None,
+    is_short: Optional[bool] = None,
 ) -> Optional[str]:
     """
-    Publishes a vertical video directly to a Facebook Page as a Reel / Video via Meta Graph API.
+    Publishes a video directly to a Facebook Page as a Reel / Video via Meta Graph API.
     Supports both direct upload and Chunked Resumable Upload (for large videos).
     """
     if not page_id:
@@ -39,13 +41,26 @@ def upload_to_facebook_page(
         logger.error(f"Video file not found for Facebook upload: {video_path}")
         return None
 
+    if is_short is None:
+        try:
+            info = get_video_info(video_path)
+            is_short = info.get("is_short", False)
+        except Exception:
+            is_short = False
+
     file_size = os.path.getsize(video_path)
-    logger.info(f"Uploading video ({file_size / 1024 / 1024:.2f} MB) to Facebook Page ID: {page_id}...")
+    logger.info(
+        f"Uploading video ({file_size / 1024 / 1024:.2f} MB, is_short={is_short}) to Facebook Page ID: {page_id}..."
+    )
+
+    clean_title = title.replace("#Shorts", "").replace("#shorts", "").strip()
+    hashtags = "#reels #gaming #haihuoc #reviewgame #shorts" if is_short else "#gaming #haihuoc #reviewgame #hoathinh3d #phimhoathinh #game"
 
     clean_caption = (
-        f"{title}\n\n"
+        f"{clean_title}\n\n"
         f"{description}\n\n"
-        f"#reels #gaming #haihuoc #reviewgame #shorts"
+        f"---\n"
+        f"{hashtags}"
     )
 
     # Use Resumable Chunked Upload for files >= 20 MB or when direct upload fails

@@ -10,6 +10,7 @@ from typing import Dict, List, Optional
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
+from src.video_processor import get_video_info
 
 logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s: %(message)s")
 logger = logging.getLogger("YouTubeUploader")
@@ -59,25 +60,51 @@ def upload_to_youtube_shorts(
     tags: Optional[List[str]] = None,
     thumbnail_path: Optional[str] = None,
     privacy_status: str = "public",
+    is_short: Optional[bool] = None,
 ) -> Optional[str]:
-    """Uploads vertical MP4 video to YouTube Shorts with optional custom thumbnail."""
-    # Ensure title contains #Shorts and stays within YouTube's 100-character limit
+    """Uploads MP4 video to YouTube with automatic detection of Shorts vs Long-form video."""
+    if is_short is None:
+        try:
+            info = get_video_info(video_path)
+            is_short = info.get("is_short", False)
+            logger.info(
+                f"Video specs: {info['width']}x{info['height']}, duration: {info['duration']:.1f}s -> "
+                f"Classification: {'YouTube Short (Dọc/Vuông <= 180s)' if is_short else 'Long-form Video (Video dài / ngang)'}"
+            )
+        except Exception as e:
+            logger.warning(f"Could not inspect video dimensions: {e}. Defaulting to is_short=False")
+            is_short = False
+
     clean_title = title.replace("#Shorts", "").replace("#shorts", "").strip()
-    if len(clean_title) > 90:
-        clean_title = clean_title[:88] + "..."
-    final_title = f"{clean_title} #Shorts"
 
-    final_desc = (
-        f"{description}\n\n"
-        f"#Shorts #gaming #haihuoc #review #game"
-    )
-
-    if tags is None:
-        tags = ["shorts", "gaming", "funny", "game", "haihuoc", "giaitri"]
+    if is_short:
+        # YouTube Shorts: Gắn hashtag #Shorts
+        if len(clean_title) > 90:
+            clean_title = clean_title[:88] + "..."
+        final_title = f"{clean_title} #Shorts"
+        final_desc = (
+            f"{description}\n\n"
+            f"---\n"
+            f"#Shorts #gaming #haihuoc #review #game"
+        )
+        if tags is None:
+            tags = ["shorts", "short", "gaming", "funny", "game", "haihuoc", "giaitri", "reviewgame"]
+    else:
+        # Long-form video (Video dài hoặc ngang): KHÔNG gắn #Shorts vào title hay description!
+        if len(clean_title) > 98:
+            clean_title = clean_title[:95] + "..."
+        final_title = clean_title
+        final_desc = (
+            f"{description}\n\n"
+            f"---\n"
+            f"#gaming #haihuoc #reviewgame #hoathinh3d #phimhoathinh #game"
+        )
+        if tags is None:
+            tags = ["gaming", "game", "haihuoc", "giaitri", "reviewgame", "hoathinh3d", "phimhoathinh", "video hay"]
 
     service = get_youtube_service()
     if not service:
-        logger.info(f"[DRY-RUN] Would upload '{final_title}' to YouTube Shorts ({privacy_status}).")
+        logger.info(f"[DRY-RUN] Would upload '{final_title}' to YouTube ({privacy_status}, is_short={is_short}).")
         return "DRY_RUN_VIDEO_ID"
 
     body = {

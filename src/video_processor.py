@@ -20,19 +20,51 @@ logging.basicConfig(level=logging.INFO, format="[%(asctime)s] %(levelname)s: %(m
 logger = logging.getLogger("VideoProcessor")
 
 
-def get_video_dimensions(video_path: str) -> Tuple[int, int]:
-    """Retrieves video width and height using ffprobe."""
+def get_video_info(video_path: str) -> Dict:
+    """
+    Retrieves video width, height, and duration (seconds) using ffprobe.
+    Determines whether video qualifies as a YouTube Short:
+    - Must be vertical or square (height >= width)
+    - Must be <= 180 seconds (3 minutes)
+    If width > height (horizontal 4:3, 16:9) or duration > 180s, it is classified as Long-form video.
+    """
     cmd = [
         "ffprobe", "-v", "error",
         "-select_streams", "v:0",
-        "-show_entries", "stream=width,height",
+        "-show_entries", "stream=width,height,duration:format=duration",
         "-of", "json",
         video_path,
     ]
     res = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True)
     info = json.loads(res.stdout)
-    stream = info["streams"][0]
-    return int(stream["width"]), int(stream["height"])
+    stream = info.get("streams", [{}])[0]
+    w = int(stream.get("width", 0))
+    h = int(stream.get("height", 0))
+
+    duration_val = stream.get("duration") or info.get("format", {}).get("duration", "0")
+    try:
+        duration = float(duration_val)
+    except Exception:
+        duration = 0.0
+
+    # YouTube Shorts conditions:
+    # 1. Height must be >= width (vertical 9:16 or square 1:1)
+    # 2. Duration must be <= 180 seconds (3 minutes)
+    is_short = (h >= w) and (0 < duration <= 180.0)
+
+    return {
+        "width": w,
+        "height": h,
+        "duration": duration,
+        "is_short": is_short,
+        "aspect_ratio": round(w / h, 2) if h > 0 else 1.0,
+    }
+
+
+def get_video_dimensions(video_path: str) -> Tuple[int, int]:
+    """Retrieves video width and height using ffprobe."""
+    info = get_video_info(video_path)
+    return info["width"], info["height"]
 
 
 def convert_srt_to_ass(
@@ -157,10 +189,12 @@ def generate_shorts_thumbnail(
     cover_image_path: str,
     output_thumbnail_path: str,
     hook_text: str = "",
+    is_short: bool = True,
 ) -> str:
     """
-    Creates an eye-catching YouTube Shorts thumbnail (vertical 720x1280 or native aspect ratio).
-    If hook_text is provided, adds a bold yellow/white text banner in the upper third of the image.
+    Creates an eye-catching YouTube thumbnail.
+    - If is_short=True: vertical 720x1280 (9:16) with text banner.
+    - If is_short=False: standard horizontal 1280x720 (16:9) with text banner.
     """
     if not os.path.exists(cover_image_path):
         return ""
@@ -168,13 +202,24 @@ def generate_shorts_thumbnail(
     os.makedirs(os.path.dirname(os.path.abspath(output_thumbnail_path)), exist_ok=True)
     clean_hook = hook_text.replace("'", "").replace(":", "").replace("\\", "").strip()
 
-    if clean_hook:
-        filter_str = (
-            "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,"
-            f"drawtext=text='{clean_hook}':font='Arial':fontsize=50:fontcolor=yellow:borderw=4:bordercolor=black:box=1:boxcolor=black@0.65:boxborderw=14:x=(w-text_w)/2:y=(h-text_h)*0.26"
-        )
+    if is_short:
+        # Vertical 9:16 thumbnail for Shorts
+        if clean_hook:
+            filter_str = (
+                "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280,"
+                f"drawtext=text='{clean_hook}':font='Arial':fontsize=50:fontcolor=yellow:borderw=4:bordercolor=black:box=1:boxcolor=black@0.65:boxborderw=14:x=(w-text_w)/2:y=(h-text_h)*0.26"
+            )
+        else:
+            filter_str = "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280"
     else:
-        filter_str = "scale=720:1280:force_original_aspect_ratio=increase,crop=720:1280"
+        # Standard horizontal 16:9 thumbnail (1280x720) for Long-form videos
+        if clean_hook:
+            filter_str = (
+                "scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720,"
+                f"drawtext=text='{clean_hook}':font='Arial':fontsize=56:fontcolor=yellow:borderw=5:bordercolor=black:box=1:boxcolor=black@0.65:boxborderw=16:x=(w-text_w)/2:y=(h-text_h)*0.18"
+            )
+        else:
+            filter_str = "scale=1280:720:force_original_aspect_ratio=increase,crop=1280:720"
 
     cmd = [
         "ffmpeg", "-nostdin", "-y",
@@ -186,7 +231,7 @@ def generate_shorts_thumbnail(
     ]
     try:
         subprocess.run(cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        logger.info(f"Generated YouTube Shorts thumbnail -> {output_thumbnail_path}")
+        logger.info(f"Generated YouTube thumbnail (is_short={is_short}) -> {output_thumbnail_path}")
         return output_thumbnail_path
     except Exception as e:
         logger.warning(f"Error generating thumbnail with text: {e}")
