@@ -90,7 +90,7 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Default,Arial,{font_size},&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,3.5,0,2,20,20,{margin_v},1
+Style: Default,Arial,{font_size},&H00FFFFFF,&H000000FF,&H00000000,&H80000000,1,0,0,0,100,100,0,0,1,4.2,0,2,20,20,{margin_v},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
@@ -132,10 +132,10 @@ def process_video_and_burn_subs(
     w, h = get_video_dimensions(input_video_path)
     logger.info(f"Input video dimensions: {w}x{h}")
 
-    # Scale font size dynamically (~34px for 960h, ~42px for 1280h)
-    font_size = max(26, int(h * 0.035))
+    # Scale font size dynamically (gấp đôi kích thước cũ: ~52px cho 720p, ~78px cho 1080p)
+    font_size = max(50, int(min(w, h) * 0.070))
     # MarginV: vertical distance from bottom edge to center subtitles right in blurred zone
-    margin_v = int(h * 0.095)
+    margin_v = int(h * 0.085)
 
     # Convert SRT to ASS in temp directory for exact placement
     temp_dir = os.path.dirname(os.path.abspath(output_video_path))
