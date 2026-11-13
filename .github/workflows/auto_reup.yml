@@ -1,20 +1,8 @@
 name: Xiaohongshu to YouTube Shorts & Facebook Reels Auto Reup
 
 on:
-  schedule:
-    # Quét dự phòng các mốc giờ vàng trong ngày theo giờ Việt Nam (UTC+7):
-    # - 12:30 trưa VN (05:30 UTC)
-    # - 19:15 tối VN (12:15 UTC)
-    # - 20:15 tối VN (13:15 UTC)
-    # - 21:15 tối VN (14:15 UTC)
-    # - 22:15 tối VN (15:15 UTC)
-    - cron: '30 5 * * *'
-    - cron: '15 12 * * *'
-    - cron: '15 13 * * *'
-    - cron: '15 14 * * *'
-    - cron: '15 15 * * *'
   workflow_dispatch:
-    # Cho phép bấm chạy thủ công bất cứ lúc nào trên GitHub Actions
+    # Kích hoạt tự động chuẩn xác từng giây từ cron-job.org qua GitHub API (hoặc bấm chạy thủ công)
     inputs:
       force:
         description: 'Bỏ qua giới hạn 1 video/ngày và ép đăng ngay lập tức'
