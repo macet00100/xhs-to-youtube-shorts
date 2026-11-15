@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-11-14T12:20:15.299021+00:00",
+  "last_updated": "2026-11-15T12:19:57.330995+00:00",
   "target_user_id": "6542ed2b00000000300323af",
   "processed_notes": [
     {
@@ -40,6 +40,14 @@
       "youtube_id": "wfAwQW2dUWU",
       "facebook_id": "1944918393336594",
       "processed_at": "2026-11-14T12:20:15.298910+00:00"
+    },
+    {
+      "note_id": "663e703c000000001e03ae45",
+      "title": "非常不配合的骷髅先生",
+      "vi_title": "Khi Đồng Đội Bộ Xương Cố Tình Hại Bạn Trong Game!",
+      "youtube_id": "Q6LdBh9Ales",
+      "facebook_id": "965519212999545",
+      "processed_at": "2026-11-15T12:19:57.330843+00:00"
     }
   ]
 }
