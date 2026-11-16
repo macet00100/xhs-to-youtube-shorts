@@ -12,6 +12,9 @@ import argparse
 import json
 import os
 import sys
+import webbrowser
+import wsgiref.simple_server
+import wsgiref.util
 
 # Ensure UTF-8 output on Windows console
 if sys.stdout.encoding != 'utf-8':
@@ -21,7 +24,12 @@ if sys.stdout.encoding != 'utf-8':
     except Exception:
         pass
 
-from google_auth_oauthlib.flow import InstalledAppFlow
+from google_auth_oauthlib.flow import (
+    InstalledAppFlow,
+    _ExclusiveWSGIServer,
+    _WSGIRequestHandler,
+    _RedirectWSGIApp,
+)
 
 SCOPES = [
     "https://www.googleapis.com/auth/youtube.upload",
@@ -107,8 +115,46 @@ def main():
         }
         flow = InstalledAppFlow.from_client_config(client_config, SCOPES)
 
-    print("\n[*] Đang khởi động trình duyệt để đăng nhập tài khoản YouTube...", flush=True)
-    creds = flow.run_local_server(port=8080, prompt="consent", access_type="offline")
+    print("\n[*] Đang khởi động máy chủ xác thực trên cổng 8080...", flush=True)
+    success_html = (
+        "<html><body style='font-family:sans-serif;text-align:center;padding:50px;'>"
+        "<h2 style='color:green;'>Xác thực YouTube thành công!</h2>"
+        "<p>Bạn có thể đóng tab này và quay lại cửa sổ Antigravity để tiếp tục.</p>"
+        "</body></html>"
+    )
+    wsgi_app = _RedirectWSGIApp(success_html)
+    local_server = wsgiref.simple_server.make_server(
+        "localhost",
+        8080,
+        wsgi_app,
+        server_class=_ExclusiveWSGIServer,
+        handler_class=_WSGIRequestHandler,
+    )
+
+    try:
+        flow.redirect_uri = "http://localhost:8080/"
+        auth_url, _ = flow.authorization_url(prompt="consent", access_type="offline")
+
+        with open("auth_url.txt", "w", encoding="utf-8") as f:
+            f.write(auth_url)
+
+        print(f"\n[AUTH_URL]{auth_url}[/AUTH_URL]\n", flush=True)
+
+        try:
+            webbrowser.open(auth_url)
+        except Exception as e:
+            print(f"[*] Không thể tự động mở trình duyệt: {e}", flush=True)
+
+        while True:
+            local_server.handle_request()
+            if wsgi_app.last_request_uri and ("code=" in wsgi_app.last_request_uri or "error=" in wsgi_app.last_request_uri):
+                break
+
+        authorization_response = wsgi_app.last_request_uri.replace("http", "https")
+        flow.fetch_token(authorization_response=authorization_response)
+        creds = flow.credentials
+    finally:
+        local_server.server_close()
 
     print("\n" + "=" * 65)
     print("XÁC THỰC YOUTUBE THÀNH CÔNG! (YOUTUBE AUTHORIZATION SUCCESSFUL)")
