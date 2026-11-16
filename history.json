@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-11-15T12:19:57.330995+00:00",
+  "last_updated": "2026-11-16T16:56:04.241311+00:00",
   "target_user_id": "6542ed2b00000000300323af",
   "processed_notes": [
     {
@@ -48,6 +48,14 @@
       "youtube_id": "Q6LdBh9Ales",
       "facebook_id": "965519212999545",
       "processed_at": "2026-11-15T12:19:57.330843+00:00"
+    },
+    {
+      "note_id": "663eabc0000000001e03b2b0",
+      "title": "非常不信任我的骷髅先生",
+      "vi_title": "Thổi Kèn Cho Bộ Xương Trong Game Và Cái Kết Đắng",
+      "youtube_id": "dkgH1LgaMQY",
+      "facebook_id": "1291698343120754",
+      "processed_at": "2026-11-16T16:56:04.241200+00:00"
     }
   ]
 }
