@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-11-16T16:56:04.241311+00:00",
+  "last_updated": "2026-11-17T12:18:00.303953+00:00",
   "target_user_id": "6542ed2b00000000300323af",
   "processed_notes": [
     {
@@ -56,6 +56,14 @@
       "youtube_id": "dkgH1LgaMQY",
       "facebook_id": "1291698343120754",
       "processed_at": "2026-11-16T16:56:04.241200+00:00"
+    },
+    {
+      "note_id": "66402f44000000001e037187",
+      "title": "今天什么节你不知道吗",
+      "vi_title": "Đố bạn biết hôm nay là ngày gì đấy?",
+      "youtube_id": "tzJtF78IYEo",
+      "facebook_id": "1156776660180084",
+      "processed_at": "2026-11-17T12:18:00.303817+00:00"
     }
   ]
 }
