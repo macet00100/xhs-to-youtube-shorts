@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-11-17T12:18:00.303953+00:00",
+  "last_updated": "2026-11-18T12:20:20.181610+00:00",
   "target_user_id": "6542ed2b00000000300323af",
   "processed_notes": [
     {
@@ -64,6 +64,14 @@
       "youtube_id": "tzJtF78IYEo",
       "facebook_id": "1156776660180084",
       "processed_at": "2026-11-17T12:18:00.303817+00:00"
+    },
+    {
+      "note_id": "6643f8d5000000001e035720",
+      "title": "非常爱臭美的骷髅先生",
+      "vi_title": "Biến Hình Cho Anh Bạn Bộ Xương Thích Điệu Đà!",
+      "youtube_id": "Q3vQSB8lWwA",
+      "facebook_id": "2334484607391585",
+      "processed_at": "2026-11-18T12:20:20.181478+00:00"
     }
   ]
 }
