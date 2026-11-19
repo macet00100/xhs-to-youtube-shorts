@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-11-18T12:20:20.181610+00:00",
+  "last_updated": "2026-11-19T12:20:58.873263+00:00",
   "target_user_id": "6542ed2b00000000300323af",
   "processed_notes": [
     {
@@ -72,6 +72,14 @@
       "youtube_id": "Q3vQSB8lWwA",
       "facebook_id": "2334484607391585",
       "processed_at": "2026-11-18T12:20:20.181478+00:00"
+    },
+    {
+      "note_id": "6646379c000000001e039eb7",
+      "title": "非常想习武的骷髅先生",
+      "vi_title": "Khi Bộ Xương Đi Bái Sư Học Võ Và Cái Kết Đắng!",
+      "youtube_id": "I7Dz0VN6OFo",
+      "facebook_id": "960881286876549",
+      "processed_at": "2026-11-19T12:20:58.873153+00:00"
     }
   ]
 }
