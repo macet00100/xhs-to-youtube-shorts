@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-11-19T12:20:58.873263+00:00",
+  "last_updated": "2026-11-20T12:22:05.019875+00:00",
   "target_user_id": "6542ed2b00000000300323af",
   "processed_notes": [
     {
@@ -80,6 +80,14 @@
       "youtube_id": "I7Dz0VN6OFo",
       "facebook_id": "960881286876549",
       "processed_at": "2026-11-19T12:20:58.873153+00:00"
+    },
+    {
+      "note_id": "664817b40000000014018e22",
+      "title": "非常爱玩的骷髅先生",
+      "vi_title": "Khi Bạn Nấu Nồi Canh Độc Lạ Trong Game!",
+      "youtube_id": "etzBEn6UHng",
+      "facebook_id": "1510843680914159",
+      "processed_at": "2026-11-20T12:22:05.019668+00:00"
     }
   ]
 }
