@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-11-21T12:22:09.133765+00:00",
+  "last_updated": "2026-11-22T12:19:44.648057+00:00",
   "target_user_id": "6542ed2b00000000300323af",
   "processed_notes": [
     {
@@ -96,6 +96,14 @@
       "youtube_id": "Ly2X4VasmnA",
       "facebook_id": "29669137246057388",
       "processed_at": "2026-11-21T12:22:09.133625+00:00"
+    },
+    {
+      "note_id": "664f8381000000001601132f",
+      "title": "非常爱喝奶茶的骷髅先生",
+      "vi_title": "Ép Bộ Xương Uống Trà Sữa Và Cái Kết!",
+      "youtube_id": "8PtfLtRt2nc",
+      "facebook_id": "1733284421835480",
+      "processed_at": "2026-11-22T12:19:44.647920+00:00"
     }
   ]
 }
