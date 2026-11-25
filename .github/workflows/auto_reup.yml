@@ -1,6 +1,9 @@
 name: Xiaohongshu to YouTube Shorts & Facebook Reels Auto Reup
 
 on:
+  schedule:
+    # Tự động chạy mỗi ngày lúc 13:00 UTC (20:00 tối giờ VN) làm phương án dự phòng
+    - cron: '0 13 * * *'
   workflow_dispatch:
     # Kích hoạt tự động chuẩn xác từng giây từ cron-job.org qua GitHub API (hoặc bấm chạy thủ công)
     inputs:
