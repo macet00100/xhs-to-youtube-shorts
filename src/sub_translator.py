@@ -100,7 +100,7 @@ Hãy trả về DUY NHẤT một chuỗi JSON hợp lệ theo cấu trúc sau (k
 }}
 """
 
-    candidate_models = ["gemini-3.5-flash", "gemini-3.8-flash", "gemini-3.5-flash-lite"]
+    candidate_models = ["gemini-3.5-flash-lite", "gemini-3.5-flash", "gemini-3.8-flash"]
     last_err = None
     data = None
 
