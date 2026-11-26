@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-11-23T12:20:25.927574+00:00",
+  "last_updated": "2026-11-26T12:21:54.073863+00:00",
   "target_user_id": "6542ed2b00000000300323af",
   "processed_notes": [
     {
@@ -112,6 +112,14 @@
       "youtube_id": "9tjjoy6XTaA",
       "facebook_id": "1800785497892028",
       "processed_at": "2026-11-23T12:20:25.927431+00:00"
+    },
+    {
+      "note_id": "66572236000000000500527e",
+      "title": "小猫咪只是想给你炒两个菜",
+      "vi_title": "Mèo ta vào bếp trổ tài nấu nướng cực gắt!",
+      "youtube_id": "B_30F8z1EOo",
+      "facebook_id": "4078224595806843",
+      "processed_at": "2026-11-26T12:21:54.073722+00:00"
     }
   ]
 }
