@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-11-26T12:21:54.073863+00:00",
+  "last_updated": "2026-11-27T12:20:48.279937+00:00",
   "target_user_id": "6542ed2b00000000300323af",
   "processed_notes": [
     {
@@ -120,6 +120,14 @@
       "youtube_id": "B_30F8z1EOo",
       "facebook_id": "4078224595806843",
       "processed_at": "2026-11-26T12:21:54.073722+00:00"
+    },
+    {
+      "note_id": "66595fcc0000000016011f70",
+      "title": "非常爱学习的骷髅先生",
+      "vi_title": "Bộ Sương Khô Đam Mê Học Tập Quá Độ!",
+      "youtube_id": "pRAitZkg7_Q",
+      "facebook_id": "29887163614304095",
+      "processed_at": "2026-11-27T12:20:48.279803+00:00"
     }
   ]
 }
