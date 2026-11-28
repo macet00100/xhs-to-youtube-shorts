@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-11-27T12:20:48.279937+00:00",
+  "last_updated": "2026-11-28T12:20:28.667615+00:00",
   "target_user_id": "6542ed2b00000000300323af",
   "processed_notes": [
     {
@@ -128,6 +128,14 @@
       "youtube_id": "pRAitZkg7_Q",
       "facebook_id": "29887163614304095",
       "processed_at": "2026-11-27T12:20:48.279803+00:00"
+    },
+    {
+      "note_id": "665ae66f0000000016013d85",
+      "title": "非常会玩的小猫咪",
+      "vi_title": "Chú mèo đỉnh cao trò chơi gắp thú!",
+      "youtube_id": "LhNceyz_tx4",
+      "facebook_id": "1807209837240803",
+      "processed_at": "2026-11-28T12:20:28.667464+00:00"
     }
   ]
 }
